@@ -7,7 +7,7 @@ LEDGER_PATH="${CODEX_DELEGATION_LEDGER:-$METRICS_DIR/delegation-ledger.jsonl}"
 RUNS_DIR="$METRICS_DIR/delegation-runs"
 MODEL="${CLAUDE_DELEGATION_MODEL:-}"
 PRINT_LIMIT="${CLAUDE_DELEGATION_PRINT_LIMIT_CHARS:-12000}"
-MAX_BUDGET_USD="${CLAUDE_DELEGATION_MAX_BUDGET_USD:-0.5}"
+MAX_BUDGET_USD="${CLAUDE_DELEGATION_MAX_BUDGET_USD:-}"
 CLAUDE_BIN="${CLAUDE_DELEGATION_CLAUDE_BIN:-claude}"
 CONTEXT_TOKEN_LIMIT="${CLAUDE_DELEGATION_CONTEXT_TOKEN_LIMIT:-1000000}"
 STRIP_IMAGES_MODE="${CLAUDE_DELEGATION_STRIP_IMAGES:-auto}"
@@ -167,7 +167,7 @@ Rules:
   - confidence
   - evidence
   - caveats
-- Keep the answer under 1200 words unless the evidence requires more.
+- Prioritize complete findings with file evidence. Use concise structure, but do not omit important mismatches only to stay brief.
 
 Delegation input preprocessing:
 - original_estimated_tokens: $RAW_INPUT_EST
@@ -190,7 +190,10 @@ if ! command -v "$CLAUDE_BIN" >/dev/null 2>&1; then
   cp "$ERROR_FILE" "$OUTPUT_FILE"
   STATUS="failed"
 else
-  CLAUDE_ARGS=(-p --max-budget-usd "$MAX_BUDGET_USD")
+  CLAUDE_ARGS=(-p)
+  if [[ -n "$MAX_BUDGET_USD" ]]; then
+    CLAUDE_ARGS+=(--max-budget-usd "$MAX_BUDGET_USD")
+  fi
   if [[ -n "$MODEL" ]]; then
     CLAUDE_ARGS+=(--model "$MODEL")
   fi
@@ -225,7 +228,7 @@ else
   SAVED_RATIO="0"
 fi
 
-TASK_TYPE="$TASK_TYPE" MODEL="$MODEL" RAW_INPUT_EST="$RAW_INPUT_EST" INPUT_EST="$INPUT_EST" OUTPUT_EST="$OUTPUT_EST" GATE_EST="$GATE_EST" CODEX_INJECTED="$CODEX_INJECTED" SAVED="$SAVED" SAVED_RATIO="$SAVED_RATIO" STATUS="$STATUS" NOTES="$NOTES" OUTPUT_FILE="$OUTPUT_FILE" LEDGER_PATH="$LEDGER_PATH" SANITIZED="$SANITIZED" SANITIZE_REPORT="$SANITIZE_REPORT" SANITIZE_REMOVED_ITEMS="$SANITIZE_REMOVED_ITEMS" SANITIZE_REMOVED_CHARS="$SANITIZE_REMOVED_CHARS" SANITIZE_REASON="$SANITIZE_REASON" CONTEXT_TOKEN_LIMIT="$CONTEXT_TOKEN_LIMIT" node <<'NODE'
+TASK_TYPE="$TASK_TYPE" MODEL="$MODEL" RAW_INPUT_EST="$RAW_INPUT_EST" INPUT_EST="$INPUT_EST" OUTPUT_EST="$OUTPUT_EST" GATE_EST="$GATE_EST" CODEX_INJECTED="$CODEX_INJECTED" SAVED="$SAVED" SAVED_RATIO="$SAVED_RATIO" STATUS="$STATUS" NOTES="$NOTES" OUTPUT_FILE="$OUTPUT_FILE" LEDGER_PATH="$LEDGER_PATH" SANITIZED="$SANITIZED" SANITIZE_REPORT="$SANITIZE_REPORT" SANITIZE_REMOVED_ITEMS="$SANITIZE_REMOVED_ITEMS" SANITIZE_REMOVED_CHARS="$SANITIZE_REMOVED_CHARS" SANITIZE_REASON="$SANITIZE_REASON" CONTEXT_TOKEN_LIMIT="$CONTEXT_TOKEN_LIMIT" MAX_BUDGET_USD="$MAX_BUDGET_USD" node <<'NODE'
 const fs = require('fs');
 const path = require('path');
 const ledgerPath = process.env.LEDGER_PATH;
@@ -235,6 +238,7 @@ const record = {
   cwd: process.cwd(),
   task_type: process.env.TASK_TYPE || 'ad_hoc',
   model: process.env.MODEL || 'claude-default',
+  max_budget_usd: process.env.MAX_BUDGET_USD ? Number(process.env.MAX_BUDGET_USD) : null,
   raw_input_est_tokens: Number(process.env.RAW_INPUT_EST || process.env.INPUT_EST || 0),
   input_est_tokens: Number(process.env.INPUT_EST || 0),
   image_resources_removed: process.env.SANITIZED === 'true',
@@ -258,7 +262,7 @@ NODE
 
 node "$SCRIPT_DIR/render_dashboard.mjs" >/dev/null 2>&1 || true
 
-echo "[delegation] model=${MODEL:-claude-default} status=$STATUS raw_input_est=$RAW_INPUT_EST input_est=$INPUT_EST codex_injected_est=$CODEX_INJECTED codex_saved_est=$SAVED saved_ratio=$SAVED_RATIO"
+echo "[delegation] model=${MODEL:-claude-default} status=$STATUS max_budget_usd=${MAX_BUDGET_USD:-none} raw_input_est=$RAW_INPUT_EST input_est=$INPUT_EST codex_injected_est=$CODEX_INJECTED codex_saved_est=$SAVED saved_ratio=$SAVED_RATIO"
 if [[ "$SANITIZED" == "true" ]]; then
   echo "[delegation] image_resources_removed=true reason=$SANITIZE_REASON removed_items=$SANITIZE_REMOVED_ITEMS removed_chars=$SANITIZE_REMOVED_CHARS report=$SANITIZE_REPORT"
 fi

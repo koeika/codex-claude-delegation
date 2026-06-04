@@ -25,6 +25,23 @@ function run(args, options = {}) {
   return result.stdout.trim();
 }
 
+function runShell(args, options = {}) {
+  const result = spawnSync(args[0], args.slice(1), {
+    cwd: tmp,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CODEX_DELEGATION_GATE_DIR: path.join(tmp, '.codex', 'delegation', 'gate-runs'),
+      CODEX_DELEGATION_METRICS_DIR: path.join(tmp, 'metrics'),
+      ...options.env,
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(`${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  }
+  return result.stdout.trim();
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -55,6 +72,31 @@ assert(['ok', 'summarize', 'handoff', 'block_heavy_read', 'delegate'].includes(o
 out = JSON.parse(run(['claude_delegate.mjs', '--file', 'small.txt', '--prepare-only']));
 assert(out.decision === 'delegate', 'explicit file delegation should force delegate');
 assert(out.source_type === 'file', 'explicit file delegation should preserve file source type');
+
+let shellOut = runShell([
+  path.join(scripts, 'ask_claude_deepseek.sh'),
+  '--file',
+  'small.txt',
+], {
+  env: {
+    CLAUDE_DELEGATION_CLAUDE_BIN: '/bin/echo',
+  },
+});
+assert(shellOut.includes('max_budget_usd=none'), 'default Claude delegation should not set a budget cap');
+assert(!shellOut.includes('--max-budget-usd'), 'default Claude command should not include --max-budget-usd');
+
+shellOut = runShell([
+  path.join(scripts, 'ask_claude_deepseek.sh'),
+  '--file',
+  'small.txt',
+], {
+  env: {
+    CLAUDE_DELEGATION_CLAUDE_BIN: '/bin/echo',
+    CLAUDE_DELEGATION_MAX_BUDGET_USD: '0.75',
+  },
+});
+assert(shellOut.includes('max_budget_usd=0.75'), 'explicit Claude delegation budget should be recorded');
+assert(shellOut.includes('--max-budget-usd 0.75'), 'explicit Claude command should include --max-budget-usd');
 
 out = JSON.parse(run(['claude_delegate.mjs', '--path', 'docs', '--prepare-only']));
 assert(out.decision === 'delegate', 'explicit directory delegation should force delegate');

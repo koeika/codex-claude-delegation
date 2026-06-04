@@ -137,18 +137,18 @@ Important metrics:
 
 These are workflow estimates, not official billing records.
 
-The Claude CLI subprocess has a per-delegation budget cap. Default:
+By default the helper does not pass `--max-budget-usd` to Claude CLI. Codex keeps
+the deterministic delegation gate, but once a task is delegated Claude is not
+budget-capped by this plugin.
 
-```text
-CLAUDE_DELEGATION_MAX_BUDGET_USD=0.5
-```
-
-Override it per run when needed:
+Set a per-delegation cap only when you explicitly want one:
 
 ```bash
 CLAUDE_DELEGATION_MAX_BUDGET_USD=1.0 \
   node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --session-id <id>
 ```
+
+Claude account, provider, context-window, and rate limits can still apply.
 
 ## Team AGENTS.md Snippet
 
