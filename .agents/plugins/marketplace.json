@@ -1,0 +1,20 @@
+{
+  "name": "claude-delegation-team",
+  "interface": {
+    "displayName": "Claude Delegation Team"
+  },
+  "plugins": [
+    {
+      "name": "codex-claude-delegation",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-claude-delegation"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
