@@ -59,10 +59,20 @@ node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --file ./prd.md
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --path ./docs
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --url https://example.com/prd
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --cmd "git diff -- src"
+node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --session-id 019e87fa-375e-78f2-bd72-c9475587b34d
 echo "content to summarize" | node plugins/codex-claude-delegation/scripts/claude_delegate.mjs
 ```
 
 Explicit delegation bypasses size thresholds only. It does not bypass safety blocks for secrets, unsafe commands, authenticated pages, unsupported binary formats, or sensitive personal data.
+
+For Codex session history, use `--session-id` or `--session-file`. Do not wrap `jq`, `sed`, or custom extraction commands in `--cmd`; complex command strings are intentionally blocked before Claude delegation. The session path extracts a text-only handoff locally, omits images and encrypted reasoning, then sends that smaller artifact to Claude.
+
+Session extraction can be tuned with:
+
+- `CODEX_SESSIONS_DIR`: override the session search root. Default: `~/.codex/sessions`.
+- `CODEX_DELEGATION_SESSION_MAX_TEXT_CHARS`: max chars kept per text field. Default: `4000`.
+- `CODEX_DELEGATION_SESSION_MAX_TOOL_CHARS`: max chars kept per tool call/output field. Default: `1200`.
+- `CODEX_DELEGATION_SESSION_MAX_TOTAL_CHARS`: max chars kept in the generated session handoff. Default: `900000`.
 
 ## What Codex Should Show
 

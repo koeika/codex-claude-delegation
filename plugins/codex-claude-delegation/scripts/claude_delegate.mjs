@@ -36,6 +36,10 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--file' || arg === '--path' || arg === '--url' || arg === '--cmd' || arg === '--text') {
       args[arg.slice(2)] = argv[++i];
+    } else if (arg === '--session-id') {
+      args.sessionId = argv[++i];
+    } else if (arg === '--session-file') {
+      args.sessionFile = argv[++i];
     } else if (arg === '--task-type') {
       args.taskType = argv[++i] || args.taskType;
     } else if (arg === '--notes') {
@@ -59,6 +63,8 @@ function usage() {
   claude_delegate.mjs --path <directory> [--task-type TYPE]
   claude_delegate.mjs --url <http-url> [--task-type TYPE]
   claude_delegate.mjs --cmd "<read-only command>" [--task-type TYPE]
+  claude_delegate.mjs --session-id <codex-session-id> [--task-type TYPE]
+  claude_delegate.mjs --session-file ~/.codex/sessions/...jsonl [--task-type TYPE]
   claude_delegate.mjs --text "content" [--task-type TYPE]
   echo "content" | claude_delegate.mjs [--task-type TYPE]
 
@@ -143,6 +149,37 @@ function prepareText(text, label = 'inline-text') {
     prepared_file: preparedFile,
     estimated_tokens: estimateTokens(body),
     truncated: false,
+  };
+}
+
+function prepareSession(args) {
+  const id = runId();
+  const preparedFile = artifactPath(id, '.session-text.txt');
+  const reportFile = artifactPath(id, '.session-report.json');
+  const extractor = path.join(scriptDir, 'extract_codex_session.mjs');
+  const extractorArgs = [extractor, '--output', preparedFile, '--report', reportFile];
+  if (args.sessionId) extractorArgs.push('--session-id', args.sessionId);
+  else extractorArgs.push('--session-file', args.sessionFile);
+  const result = spawnSync(process.execPath, extractorArgs, {
+    cwd,
+    encoding: 'utf8',
+    env: process.env,
+  });
+  if (result.status !== 0) {
+    throw new Error(`session extraction failed: ${result.stderr || result.stdout}`);
+  }
+  const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+  return {
+    source_type: 'session',
+    prepared_file: preparedFile,
+    report_file: reportFile,
+    session_file: report.session_file,
+    estimated_tokens: report.output_est_tokens || estimateTokens(fs.readFileSync(preparedFile, 'utf8')),
+    lines_seen: report.lines_seen || 0,
+    lines_extracted: report.lines_extracted || 0,
+    image_payloads_omitted: report.image_payloads_omitted || 0,
+    encrypted_fields_omitted: report.encrypted_fields_omitted || 0,
+    truncated: report.truncated_fields > 0,
   };
 }
 
@@ -309,16 +346,17 @@ function runHelper(args, prepared) {
 }
 
 async function prepare(args) {
-  const stdinText = !args.file && !args.path && !args.url && !args.cmd && !args.text ? readStdinIfAvailable() : '';
-  const selected = ['file', 'path', 'url', 'cmd', 'text'].filter((key) => args[key]);
+  const stdinText = !args.file && !args.path && !args.url && !args.cmd && !args.text && !args.sessionId && !args.sessionFile ? readStdinIfAvailable() : '';
+  const selected = ['file', 'path', 'url', 'cmd', 'text', 'sessionId', 'sessionFile'].filter((key) => args[key]);
   if (stdinText) selected.push('stdin');
   if (selected.length !== 1) {
-    throw new Error('Provide exactly one input source: --file, --path, --url, --cmd, --text, or stdin');
+    throw new Error('Provide exactly one input source: --file, --path, --url, --cmd, --session-id, --session-file, --text, or stdin');
   }
   if (args.file) return prepareFile(args.file);
   if (args.path) return prepareDirectory(args.path);
   if (args.url) return prepareUrl(args.url);
   if (args.cmd) return { source_type: 'command', prepared_file: '', estimated_tokens: 0, truncated: false };
+  if (args.sessionId || args.sessionFile) return prepareSession(args);
   if (args.text) return prepareText(args.text, 'inline-text');
   return prepareText(stdinText, 'stdin');
 }

@@ -83,4 +83,41 @@ assert(sanitized.includes('keep this text'), 'sanitizer should preserve text con
 assert(!sanitized.includes('data:image/png;base64'), 'sanitizer should remove data image URIs');
 assert(sanitized.includes('image-data-uri-removed'), 'sanitizer should leave an image placeholder');
 
+const sessionId = '019test-session';
+const sessionsDir = path.join(tmp, 'sessions', '2026', '06', '04');
+fs.mkdirSync(sessionsDir, { recursive: true });
+const sessionFile = path.join(sessionsDir, `rollout-2026-06-04T12-00-00-${sessionId}.jsonl`);
+fs.writeFileSync(sessionFile, [
+  JSON.stringify({ timestamp: '2026-06-04T00:00:00Z', type: 'session_meta', payload: { id: sessionId, cwd: tmp, originator: 'test' } }),
+  JSON.stringify({ timestamp: '2026-06-04T00:00:01Z', type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'session user text' }, { type: 'input_image', image_url: imagePayload }] } }),
+  JSON.stringify({ timestamp: '2026-06-04T00:00:02Z', type: 'response_item', payload: { type: 'reasoning', encrypted_content: 'x'.repeat(4096), summary: [] } }),
+  JSON.stringify({ timestamp: '2026-06-04T00:00:03Z', type: 'response_item', payload: { type: 'function_call_output', call_id: 'call_1', output: 'tool output text' } }),
+].join('\n'));
+
+out = JSON.parse(run([
+  'extract_codex_session.mjs',
+  '--session-file',
+  sessionFile,
+  '--output',
+  'session.extract.txt',
+  '--report',
+  'session.extract.json',
+]));
+assert(out.output_est_tokens > 0, 'session extractor should produce text output');
+const sessionExtract = fs.readFileSync(path.join(tmp, 'session.extract.txt'), 'utf8');
+assert(sessionExtract.includes('session user text'), 'session extractor should preserve user text');
+assert(sessionExtract.includes('tool output text'), 'session extractor should preserve tool output text');
+assert(!sessionExtract.includes('data:image/png;base64'), 'session extractor should omit image payloads');
+assert(!sessionExtract.includes('encrypted_content'), 'session extractor should omit encrypted content');
+
+out = JSON.parse(run(['claude_delegate.mjs', '--session-id', sessionId, '--prepare-only'], {
+  env: { CODEX_SESSIONS_DIR: path.join(tmp, 'sessions') },
+}));
+assert(out.decision === 'delegate', 'explicit session delegation should force delegate');
+assert(out.source_type === 'session', 'session delegation should use session source type');
+assert(fs.existsSync(out.prepared_file), 'session delegation should prepare a text handoff file');
+const preparedSession = fs.readFileSync(out.prepared_file, 'utf8');
+assert(preparedSession.includes('session user text'), 'prepared session should include user text');
+assert(!preparedSession.includes('data:image/png;base64'), 'prepared session should not include image payloads');
+
 console.log(`ok ${tmp}`);

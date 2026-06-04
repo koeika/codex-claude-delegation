@@ -16,12 +16,15 @@ node <plugin-root>/scripts/claude_delegate.mjs --file path/to/file.md --task-typ
 node <plugin-root>/scripts/claude_delegate.mjs --path ./docs --task-type explicit_delegate
 node <plugin-root>/scripts/claude_delegate.mjs --url https://example.com/prd --task-type explicit_delegate
 node <plugin-root>/scripts/claude_delegate.mjs --cmd "git diff -- src" --task-type explicit_delegate
+node <plugin-root>/scripts/claude_delegate.mjs --session-id 019e87fa-375e-78f2-bd72-c9475587b34d --task-type session_handoff
 echo "inline content" | node <plugin-root>/scripts/claude_delegate.mjs --task-type explicit_delegate
 ```
 
 Explicit invocation bypasses size thresholds only. It does not bypass safety blocks for secrets, unsafe commands, authenticated pages, unsupported binary formats, or sensitive personal data.
 
 If delegated input exceeds the configured Claude context limit, or if the selected model name contains `deepseek`, `ask_claude_deepseek.sh` automatically generates a no-image input copy before calling Claude. This removes `data:image/*;base64` payloads and image fields from JSONL/tool logs while preserving text. Treat image-removal placeholders as intentionally omitted unsupported visual resources.
+
+For Codex session history, use `claude_delegate.mjs --session-id <id>` or `--session-file <jsonl>`. Do not use `--cmd "jq ..."` or other custom extraction commands for session JSONL: command delegation has a strict read-only allowlist and may be blocked before image filtering runs. The session path extracts a text-only handoff locally, omits images and encrypted reasoning, then delegates that artifact.
 
 ## Visible Result Contract
 

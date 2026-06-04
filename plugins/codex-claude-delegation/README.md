@@ -52,12 +52,22 @@ node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --file ./prd.md
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --path ./docs
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --url https://example.com/prd
 node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --cmd "git diff -- src"
+node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --session-id 019e87fa-375e-78f2-bd72-c9475587b34d
 echo "content to summarize" | node plugins/codex-claude-delegation/scripts/claude_delegate.mjs
 ```
 
 This path bypasses size-threshold decisions and sends supported read-only input to Claude CLI. Safety blocks still apply: no secrets, unsafe commands, authenticated pages, unsupported binary formats, or sensitive personal data.
 
 Directory and URL inputs are first copied into a local artifact under `.codex/delegation/force-runs/`; Codex sees only the concise Claude result and local artifact paths.
+
+For Codex session history, use `--session-id` or `--session-file`. Do not wrap `jq`, `sed`, or custom extraction commands in `--cmd`; complex command strings are intentionally blocked before Claude delegation. The session path extracts a text-only handoff locally, omits images and encrypted reasoning, then sends that smaller artifact to Claude.
+
+Session extraction can be tuned with:
+
+- `CODEX_SESSIONS_DIR`: override the session search root. Default: `~/.codex/sessions`.
+- `CODEX_DELEGATION_SESSION_MAX_TEXT_CHARS`: max chars kept per text field. Default: `4000`.
+- `CODEX_DELEGATION_SESSION_MAX_TOOL_CHARS`: max chars kept per tool call/output field. Default: `1200`.
+- `CODEX_DELEGATION_SESSION_MAX_TOTAL_CHARS`: max chars kept in the generated session handoff. Default: `900000`.
 
 ### What Appears In Codex
 
@@ -152,6 +162,10 @@ Environment variables:
 - `CODEX_DELEGATION_FORCE_DIR`
 - `CLAUDE_DELEGATION_CONTEXT_TOKEN_LIMIT`
 - `CLAUDE_DELEGATION_STRIP_IMAGES`
+- `CODEX_SESSIONS_DIR`
+- `CODEX_DELEGATION_SESSION_MAX_TEXT_CHARS`
+- `CODEX_DELEGATION_SESSION_MAX_TOOL_CHARS`
+- `CODEX_DELEGATION_SESSION_MAX_TOTAL_CHARS`
 
 If `CLAUDE_DELEGATION_MODEL` is unset, the helper lets Claude CLI use the user's configured default model.
 
