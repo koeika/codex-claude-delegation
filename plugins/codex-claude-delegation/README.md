@@ -28,7 +28,7 @@ plugins/codex-claude-delegation/
 install the marketplace:
 
 ```bash
-codex plugin marketplace add https://git.garena.com/huixia.huang/claude-delegation --ref main
+codex plugin marketplace add https://github.com/koeika/codex-claude-delegation --ref main
 ```
 
 In the Codex plugin UI, this marketplace appears as `Sia Claude Delegation`. The CLI marketplace ID remains `claude-delegation-team`.

@@ -13,12 +13,12 @@ Requirements:
 - Codex with plugin support.
 - Node.js available as `node`.
 - Claude CLI available as `claude`, or `CLAUDE_DELEGATION_CLAUDE_BIN` set to the Claude CLI path.
-- Access to this Sea Group Git repository.
+- Access to this GitHub repository.
 
 Install the marketplace:
 
 ```bash
-codex plugin marketplace add https://git.garena.com/huixia.huang/claude-delegation --ref main
+codex plugin marketplace add https://github.com/koeika/codex-claude-delegation --ref main
 ```
 
 In the Codex plugin UI, this marketplace appears as `Sia Claude Delegation`. The CLI marketplace ID remains `claude-delegation-team`.
