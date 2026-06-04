@@ -21,6 +21,8 @@ Install the marketplace:
 codex plugin marketplace add https://git.garena.com/huixia.huang/claude-delegation --ref main
 ```
 
+In the Codex plugin UI, this marketplace appears as `Sia Claude Delegation`. The CLI marketplace ID remains `claude-delegation-team`.
+
 Install the plugin:
 
 ```bash
@@ -165,4 +167,3 @@ plugins/codex-claude-delegation/
 - Do not delegate secrets, credentials, unredacted local config, sensitive screenshots, personal data, or authenticated pages.
 - Command delegation only supports a strict read-only allowlist.
 - Claude output is advisory. Codex remains responsible for final decisions, implementation, and verification.
-

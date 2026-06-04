@@ -1,7 +1,7 @@
 {
   "name": "claude-delegation-team",
   "interface": {
-    "displayName": "Claude Delegation Team"
+    "displayName": "Sia Claude Delegation"
   },
   "plugins": [
     {
