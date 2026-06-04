@@ -96,6 +96,19 @@ Default delegation thresholds:
 - Log output: over about 200 lines.
 - Review scope: more than 8 files.
 
+## Image Payload Stripping
+
+If a delegated input is estimated to exceed the Claude context limit, the helper first creates a no-image copy of the input and sends that smaller copy to Claude.
+
+This is mainly for Codex session JSONL and browser/tool logs where screenshots may be stored as `data:image/*;base64,...`. Those payloads can be millions of tokenizer tokens even when the file is only a few megabytes. They are also not useful when the selected Claude CLI model is DeepSeek, because that path does not read images.
+
+The helper also strips image payloads automatically when `--model` or `CLAUDE_DELEGATION_MODEL` contains `deepseek`.
+
+Related environment variables:
+
+- `CLAUDE_DELEGATION_CONTEXT_TOKEN_LIMIT`: context-size trigger for image stripping. Default: `1000000`.
+- `CLAUDE_DELEGATION_STRIP_IMAGES`: `auto` by default. Use `always`/`1` to force stripping, or `never`/`0` to disable it.
+
 ## Metrics
 
 Successful delegations append records to:

@@ -60,4 +60,27 @@ out = JSON.parse(run(['claude_delegate.mjs', '--path', 'docs', '--prepare-only']
 assert(out.decision === 'delegate', 'explicit directory delegation should force delegate');
 assert(fs.existsSync(out.prepared_file), 'explicit directory delegation should prepare a bundle file');
 
+const imagePayload = `data:image/png;base64,${'Aa0/'.repeat(2048)}`;
+fs.writeFileSync(path.join(tmp, 'session.jsonl'), `${JSON.stringify({
+  type: 'message',
+  content: [
+    { type: 'input_text', text: 'keep this text' },
+    { type: 'input_image', image_url: imagePayload },
+  ],
+})}\n`);
+out = JSON.parse(run([
+  'sanitize_delegation_input.mjs',
+  '--input',
+  'session.jsonl',
+  '--output',
+  'session.no-images.jsonl',
+  '--report',
+  'sanitize-report.json',
+]));
+assert(out.removed_items > 0, 'sanitizer should remove image payloads');
+const sanitized = fs.readFileSync(path.join(tmp, 'session.no-images.jsonl'), 'utf8');
+assert(sanitized.includes('keep this text'), 'sanitizer should preserve text content');
+assert(!sanitized.includes('data:image/png;base64'), 'sanitizer should remove data image URIs');
+assert(sanitized.includes('image-data-uri-removed'), 'sanitizer should leave an image placeholder');
+
 console.log(`ok ${tmp}`);

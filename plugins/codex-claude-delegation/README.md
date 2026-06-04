@@ -100,6 +100,14 @@ For long threads, Codex can also run:
 node plugins/codex-claude-delegation/scripts/context_budget_gate.mjs --json
 ```
 
+### Image Payload Stripping
+
+If delegated input is estimated to exceed the Claude context limit, the helper first creates a no-image copy and sends that smaller copy to Claude.
+
+This is mainly for Codex session JSONL and browser/tool logs where screenshots may be stored as `data:image/*;base64,...`. These payloads can become millions of tokenizer tokens and are not useful when the selected Claude CLI model is DeepSeek, because that path does not read images.
+
+The helper also strips image payloads automatically when `--model` or `CLAUDE_DELEGATION_MODEL` contains `deepseek`.
+
 ## Metrics
 
 The helper writes:
@@ -142,6 +150,8 @@ Environment variables:
 - `CODEX_DELEGATION_CONTEXT_BLOCK_THRESHOLD`
 - `CODEX_DELEGATION_FORCE_MAX_BYTES`
 - `CODEX_DELEGATION_FORCE_DIR`
+- `CLAUDE_DELEGATION_CONTEXT_TOKEN_LIMIT`
+- `CLAUDE_DELEGATION_STRIP_IMAGES`
 
 If `CLAUDE_DELEGATION_MODEL` is unset, the helper lets Claude CLI use the user's configured default model.
 

@@ -21,6 +21,8 @@ echo "inline content" | node <plugin-root>/scripts/claude_delegate.mjs --task-ty
 
 Explicit invocation bypasses size thresholds only. It does not bypass safety blocks for secrets, unsafe commands, authenticated pages, unsupported binary formats, or sensitive personal data.
 
+If delegated input exceeds the configured Claude context limit, or if the selected model name contains `deepseek`, `ask_claude_deepseek.sh` automatically generates a no-image input copy before calling Claude. This removes `data:image/*;base64` payloads and image fields from JSONL/tool logs while preserving text. Treat image-removal placeholders as intentionally omitted unsupported visual resources.
+
 ## Visible Result Contract
 
 After running `claude_delegate.mjs` or `ask_claude_deepseek.sh`, Codex must surface the final Claude result in the user-facing response.
