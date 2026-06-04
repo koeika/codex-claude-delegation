@@ -138,6 +138,19 @@ Useful fields:
 
 These are workflow estimates, not official billing records.
 
+The Claude CLI subprocess has a per-delegation budget cap. Default:
+
+```text
+CLAUDE_DELEGATION_MAX_BUDGET_USD=0.5
+```
+
+Override it per run when needed:
+
+```bash
+CLAUDE_DELEGATION_MAX_BUDGET_USD=1.0 \
+  node plugins/codex-claude-delegation/scripts/claude_delegate.mjs --session-id <id>
+```
+
 ## Update This Plugin
 
 After changing plugin files, update the Codex cachebuster before publishing:

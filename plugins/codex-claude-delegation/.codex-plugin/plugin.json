@@ -1,6 +1,6 @@
 {
   "name": "codex-claude-delegation",
-  "version": "0.1.0+codex.20260604045058",
+  "version": "0.1.0+codex.20260604050305",
   "description": "Deterministically delegate token-heavy read-only Codex work to a local Claude CLI subprocess.",
   "author": {
     "name": "Codex Claude Delegation maintainers"
